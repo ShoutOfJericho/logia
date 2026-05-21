@@ -1,0 +1,411 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification for Logia — a Bible reading and reflection app.
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: sessions
+    description: Bible reading & reflection sessions
+  - name: passages
+    description: Bible passage lookup
+  - name: dashboard
+    description: Aggregated statistics
+  - name: lexicon
+    description: Bible-name lexicon for transcript correction
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /lexicon:
+    get:
+      operationId: getLexicon
+      tags: [lexicon]
+      summary: Bible names lexicon
+      description: Returns the curated list of biblical proper nouns that the client uses to correct speech-recognition output.
+      responses:
+        "200":
+          description: Lexicon
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lexicon"
+
+  /passages/{book}/{chapter}:
+    get:
+      operationId: getPassage
+      tags: [passages]
+      summary: Get a Bible chapter
+      parameters:
+        - in: path
+          name: book
+          required: true
+          schema: { type: string }
+          description: Book name, e.g. "Genesis", "1 Samuel"
+        - in: path
+          name: chapter
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: Passage
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Passage"
+        "404":
+          description: Passage not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /sessions:
+    get:
+      operationId: listSessions
+      tags: [sessions]
+      summary: List all sessions
+      parameters:
+        - in: query
+          name: limit
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 200 }
+      responses:
+        "200":
+          description: Sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/SessionSummary" }
+    post:
+      operationId: createSession
+      tags: [sessions]
+      summary: Start a new session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateSessionInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Session" }
+
+  /sessions/recent:
+    get:
+      operationId: listRecentSessions
+      tags: [sessions]
+      summary: List the 5 most recent sessions
+      responses:
+        "200":
+          description: Recent sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/SessionSummary" }
+
+  /sessions/{id}:
+    get:
+      operationId: getSession
+      tags: [sessions]
+      summary: Get a session with all data
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Session
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Session" }
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+    patch:
+      operationId: updateSession
+      tags: [sessions]
+      summary: Update a session (append transcripts, finalize, etc)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateSessionInput" }
+      responses:
+        "200":
+          description: Updated session
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Session" }
+    delete:
+      operationId: deleteSession
+      tags: [sessions]
+      summary: Delete a session
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "204":
+          description: Deleted
+
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: High-level stats for the dashboard
+      responses:
+        "200":
+          description: Summary
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DashboardSummary" }
+
+  /dashboard/aha-moments:
+    get:
+      operationId: listAhaMoments
+      tags: [dashboard]
+      summary: Aha moments across all sessions
+      parameters:
+        - in: query
+          name: limit
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 200 }
+      responses:
+        "200":
+          description: Aha moments
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AhaMomentWithSession" }
+
+  /dashboard/excited-passages:
+    get:
+      operationId: listExcitedPassages
+      tags: [dashboard]
+      summary: Top passages by average vocal excitement
+      responses:
+        "200":
+          description: Top passages
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ExcitedPassage" }
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status: { type: string }
+      required: [status]
+
+    ErrorResponse:
+      type: object
+      properties:
+        error: { type: string }
+      required: [error]
+
+    Lexicon:
+      type: object
+      description: A curated dictionary of biblical proper nouns plus phrase patterns marking aha moments.
+      properties:
+        names:
+          type: array
+          items: { type: string }
+        ahaPatterns:
+          type: array
+          items: { type: string }
+      required: [names, ahaPatterns]
+
+    Passage:
+      type: object
+      properties:
+        book: { type: string }
+        chapter: { type: integer }
+        translation: { type: string }
+        verses:
+          type: array
+          items:
+            type: object
+            properties:
+              verse: { type: integer }
+              text: { type: string }
+            required: [verse, text]
+      required: [book, chapter, translation, verses]
+
+    CreateSessionInput:
+      type: object
+      properties:
+        book:
+          type: string
+          minLength: 1
+        chapter:
+          type: integer
+          minimum: 1
+        title:
+          type: string
+      required: [book, chapter]
+
+    TranscriptSegmentKind:
+      type: string
+      enum: [reading, reflection]
+
+    TranscriptSegment:
+      type: object
+      properties:
+        id: { type: string }
+        kind: { $ref: "#/components/schemas/TranscriptSegmentKind" }
+        text: { type: string }
+        startedAt: { type: integer, description: "ms since session start" }
+        endedAt: { type: integer, description: "ms since session start" }
+        excitement:
+          type: number
+          description: "0-1 normalized excitement score"
+        f0Mean: { type: number, nullable: true }
+        f0Std: { type: number, nullable: true }
+        jitter: { type: number, nullable: true }
+        shimmer: { type: number, nullable: true }
+        hnr: { type: number, nullable: true }
+        isAha: { type: boolean }
+        ahaPhrase: { type: string, nullable: true }
+      required: [id, kind, text, startedAt, endedAt, excitement, isAha]
+
+    AhaMoment:
+      type: object
+      properties:
+        id: { type: string }
+        text: { type: string }
+        phrase: { type: string }
+        excitement: { type: number }
+        timestampMs: { type: integer }
+      required: [id, text, phrase, excitement, timestampMs]
+
+    AhaMomentWithSession:
+      allOf:
+        - $ref: "#/components/schemas/AhaMoment"
+        - type: object
+          properties:
+            sessionId: { type: string }
+            book: { type: string }
+            chapter: { type: integer }
+            sessionStartedAt: { type: string, format: date-time }
+          required: [sessionId, book, chapter, sessionStartedAt]
+
+    ExcitedPassage:
+      type: object
+      properties:
+        book: { type: string }
+        chapter: { type: integer }
+        averageExcitement: { type: number }
+        sessionCount: { type: integer }
+        peakExcitement: { type: number }
+      required: [book, chapter, averageExcitement, sessionCount, peakExcitement]
+
+    SessionSummary:
+      type: object
+      properties:
+        id: { type: string }
+        book: { type: string }
+        chapter: { type: integer }
+        title: { type: string, nullable: true }
+        startedAt: { type: string, format: date-time }
+        endedAt: { type: string, format: date-time, nullable: true }
+        durationMs: { type: integer }
+        readingMs: { type: integer }
+        reflectionMs: { type: integer }
+        averageExcitement: { type: number }
+        peakExcitement: { type: number }
+        ahaCount: { type: integer }
+        wordCount: { type: integer }
+      required:
+        - id
+        - book
+        - chapter
+        - startedAt
+        - durationMs
+        - readingMs
+        - reflectionMs
+        - averageExcitement
+        - peakExcitement
+        - ahaCount
+        - wordCount
+
+    Session:
+      allOf:
+        - $ref: "#/components/schemas/SessionSummary"
+        - type: object
+          properties:
+            segments:
+              type: array
+              items: { $ref: "#/components/schemas/TranscriptSegment" }
+            ahaMoments:
+              type: array
+              items: { $ref: "#/components/schemas/AhaMoment" }
+          required: [segments, ahaMoments]
+
+    UpdateSessionInput:
+      type: object
+      properties:
+        title: { type: string }
+        endedAt: { type: string, format: date-time }
+        appendSegments:
+          type: array
+          items: { $ref: "#/components/schemas/TranscriptSegment" }
+        replaceSegments:
+          type: array
+          items: { $ref: "#/components/schemas/TranscriptSegment" }
+        finalize:
+          type: boolean
+          description: Mark the session as finished and recompute aggregates.
+
+    DashboardSummary:
+      type: object
+      properties:
+        totalSessions: { type: integer }
+        totalReadingMs: { type: integer }
+        totalReflectionMs: { type: integer }
+        totalAhaMoments: { type: integer }
+        averageExcitement: { type: number }
+        uniqueBooks: { type: integer }
+        uniqueChapters: { type: integer }
+        currentStreakDays: { type: integer }
+      required:
+        - totalSessions
+        - totalReadingMs
+        - totalReflectionMs
+        - totalAhaMoments
+        - averageExcitement
+        - uniqueBooks
+        - uniqueChapters
+        - currentStreakDays
