@@ -76,6 +76,40 @@ export const THEOLOGY_NOTES: TheologyNote[] = [
     reviewerNotes:
       "Summarized manually from GotQuestions article. Avoid overstating conclusion.",
   },
+
+  {
+    id: "john-21-153-fish-gematria",
+    topic: "153 fish",
+  
+    language: "hebrew",
+  
+    title: "153 fish and Hebrew gematria",
+  
+    claim:
+      "Some interpreters connect the 153 fish in John 21:11 with Hebrew gematria, including the phrase Ani Elohim, often rendered 'I am God.' This should be treated as a candidate interpretation because other explanations for 153 also exist.",
+  
+    sourceName: "Verse By Verse Ministry",
+  
+    sourceUrl:
+      "https://versebyverseministry.org/bible-answers/153-fishes-i-am-g-d",
+  
+    triggerPassages: ["John 21"],
+  
+    triggerBooks: ["John"],
+  
+    triggerKeywords: ["153", "fish", "net", "catch", "gematria"],
+  
+    passageRefs: ["John 21:11"],
+  
+    keywords: ["153", "fish", "gematria", "john 21", "i am god", "ani elohim"],
+  
+    evidenceRefs: ["John 21:11"],
+  
+    status: "needs-review",
+  
+    reviewerNotes:
+      "Treat carefully. Other interpretations of 153 exist, including Augustine's triangular-number explanation and other proposed Hebrew gematria readings.",
+  },
 ];
 
 export function findTheologyNotes({

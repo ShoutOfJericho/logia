@@ -68,6 +68,47 @@ const importancePhrases = [
   "this stands out",
   "the main thing",
   "the big thing",
+  "this is important",
+  "so important",
+  "really important",
+  "super important",
+  "this is super important",
+  "this matters",
+  "this really matters",
+  "crucial",
+  "this is crucial",
+  "crucial to understand",
+  "this is crucial to understand",
+  "important to understand",
+  "this is important to understand",
+  "really crucial",
+  "really crucial to understand",
+  "we need to understand",
+  "you need to understand",
+  "we have to understand",
+  "you have to understand",
+  "do not miss this",
+  "don't miss this",
+  "this is the key",
+  "this is the point",
+  "this is the key to understand",
+  "this is key to understand",
+  "the important thing is",
+  "the crucial thing is",
+  "the main thing",
+  "the big thing",
+  "what stands out",
+  "this stands out",
+  "god is showing me",
+  "i feel convicted",
+  "i need to change",
+  "this hit me",
+  "this really hit me",
+  "this explains",
+  "this shows us",
+  "this teaches us",
+  "the lesson here",
+  "the takeaway is",
 ];
 
 function detectImportance(text: string) {
@@ -1003,71 +1044,7 @@ const highEnergyQuotes = useMemo(() => {
         </section>
       )}
 
-      {sermonFlow.length > 0 && (
-        <section className="mb-10" data-testid="section-sermon-flow">
-          <h2 className="font-serif text-2xl mb-4 flex items-center gap-2">
-            <BookOpen className="h-5 w-5 text-primary" />
-            Verse-by-Verse Flow
-          </h2>
 
-          <div className="space-y-4">
-            {sermonFlow.map((node, index) => (
-              <div key={node.id} className="relative pl-8">
-                {index < sermonFlow.length - 1 && (
-                  <div className="absolute left-3 top-8 bottom-[-1rem] w-px bg-border" />
-                )}
-
-                <div className="absolute left-0 top-2 h-6 w-6 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center text-xs text-primary font-medium">
-                  {node.verse}
-                </div>
-
-                <Card className="paper">
-                  <CardContent className="p-5">
-                    <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">
-                      {node.verseRange}
-                    </div>
-
-                    <p className="font-serif text-lg leading-relaxed">
-                      {node.mainIdea}
-                    </p>
-
-                    <p className="text-sm text-muted-foreground mt-2">
-                      “{node.sourceQuote}”
-                    </p>
-
-                    {node.branches.length > 0 && (
-                      <div className="mt-4 ml-2 border-l border-border pl-4 space-y-3">
-                        {node.branches.map((branch) => (
-                          <button
-                            key={branch.id}
-                            onClick={() => {
-                              if (branch.segmentId) jumpToSegment(branch.segmentId);
-                            }}
-                            className="block w-full text-left rounded-md bg-muted/30 hover:bg-muted px-3 py-2 transition-colors"
-                          >
-                            <div className="flex items-center justify-between gap-3 mb-1">
-                              <Badge variant="secondary">{branch.label}</Badge>
-                              {branch.excitement !== undefined && (
-                                <span className="text-xs text-primary">
-                                  {formatExcitement(branch.excitement)}
-                                </span>
-                              )}
-                            </div>
-
-                            <p className="font-serif italic text-sm leading-relaxed line-clamp-3">
-                              {branch.text}
-                            </p>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
 
       <Card className="paper mb-8" data-testid="card-excitement-timeline">
         <CardContent className="p-5">
