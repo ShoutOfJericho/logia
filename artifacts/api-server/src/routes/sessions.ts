@@ -80,7 +80,13 @@ async function loadFullSession(id: string) {
 }
 
 router.get("/sessions", async (req, res) => {
-  const parsed = ListSessionsQueryParams.safeParse(req.query);
+  const rawLimit = req.query["limit"];
+  const parsed = ListSessionsQueryParams.safeParse({
+    limit:
+      typeof rawLimit === "string" && rawLimit.trim() !== ""
+        ? Number(rawLimit)
+        : undefined,
+  });
 
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid query parameters" });

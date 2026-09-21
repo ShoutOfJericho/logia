@@ -7,6 +7,8 @@ import {
   doublePrecision,
   boolean,
   index,
+  jsonb,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 
 export const sessionsTable = pgTable(
@@ -64,6 +66,63 @@ export const segmentsTable = pgTable(
   }),
 );
 
+export const studyNotesTable = pgTable(
+  "study_notes",
+  {
+    id: text("id").primaryKey(),
+    topic: text("topic").notNull(),
+    language: text("language", { enum: ["hebrew", "aramaic", "greek"] })
+      .notNull(),
+    title: text("title").notNull(),
+    claim: text("claim").notNull(),
+    summary: text("summary").notNull(),
+    readerValue: text("reader_value").notNull(),
+    sourceName: text("source_name").notNull(),
+    sourceUrl: text("source_url").notNull(),
+    triggerPassages: jsonb("trigger_passages").$type<string[]>().notNull(),
+    triggerBooks: jsonb("trigger_books").$type<string[]>().notNull(),
+    triggerKeywords: jsonb("trigger_keywords").$type<string[]>().notNull(),
+    passageRefs: jsonb("passage_refs").$type<string[]>().notNull(),
+    keywords: jsonb("keywords").$type<string[]>().notNull(),
+    evidenceRefs: jsonb("evidence_refs").$type<string[]>().notNull(),
+    status: text("status", { enum: ["approved", "needs-review"] }).notNull(),
+    reviewerNotes: text("reviewer_notes"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => ({
+    languageIdx: index("study_notes_language_idx").on(t.language),
+    statusIdx: index("study_notes_status_idx").on(t.status),
+  }),
+);
+
+export const studyNoteRatingsTable = pgTable(
+  "study_note_ratings",
+  {
+    noteId: text("note_id")
+      .notNull()
+      .references(() => studyNotesTable.id, { onDelete: "cascade" }),
+    clientId: text("client_id").notNull(),
+    rating: integer("rating").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.noteId, t.clientId] }),
+    noteIdx: index("study_note_ratings_note_idx").on(t.noteId),
+  }),
+);
+
 export type SessionRow = typeof sessionsTable.$inferSelect;
 export type SegmentRow = typeof segmentsTable.$inferSelect;
 export type InsertSegment = typeof segmentsTable.$inferInsert;
+export type StudyNoteRow = typeof studyNotesTable.$inferSelect;
+export type InsertStudyNote = typeof studyNotesTable.$inferInsert;

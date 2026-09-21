@@ -29,6 +29,9 @@ export default defineConfig({
       client: "react-query",
       prettier: true,
       override: {
+        fetch: {
+          includeHttpResponseReturnType: false,
+        },
         mutator: {
           path: "../api-client-react/src/fetcher.ts",
           name: "customFetcher",

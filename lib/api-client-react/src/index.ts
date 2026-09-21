@@ -106,6 +106,104 @@ export interface ExcitedPassage {
   peakExcitement: number;
 }
 
+export type StudyNoteLanguage = typeof StudyNoteLanguage[keyof typeof StudyNoteLanguage];
+
+
+export const StudyNoteLanguage = {
+  hebrew: 'hebrew',
+  aramaic: 'aramaic',
+  greek: 'greek',
+} as const;
+
+export type StudyNoteStatus = typeof StudyNoteStatus[keyof typeof StudyNoteStatus];
+
+
+export const StudyNoteStatus = {
+  approved: 'approved',
+  'needs-review': 'needs-review',
+} as const;
+
+export interface StudyNote {
+  id: string;
+  topic: string;
+  language: StudyNoteLanguage;
+  title: string;
+  claim: string;
+  summary: string;
+  readerValue: string;
+  sourceName: string;
+  sourceUrl: string;
+  triggerPassages: string[];
+  triggerBooks: string[];
+  triggerKeywords: string[];
+  passageRefs: string[];
+  keywords: string[];
+  evidenceRefs: string[];
+  status: StudyNoteStatus;
+  reviewerNotes?: string | null;
+  averageRating: number;
+  ratingCount: number;
+}
+
+export interface RateStudyNoteInput {
+  /** @minLength 1 */
+  clientId: string;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  rating: number;
+}
+
+export interface CreateStudyNoteInput {
+  /** @minLength 1 */
+  id: string;
+  /** @minLength 1 */
+  topic: string;
+  language: StudyNoteLanguage;
+  /** @minLength 1 */
+  title: string;
+  /** @minLength 1 */
+  claim: string;
+  /** @minLength 1 */
+  summary: string;
+  /** @minLength 1 */
+  readerValue: string;
+  /** @minLength 1 */
+  sourceName: string;
+  /** @minLength 1 */
+  sourceUrl: string;
+  triggerPassages: string[];
+  triggerBooks: string[];
+  triggerKeywords: string[];
+  passageRefs: string[];
+  keywords: string[];
+  evidenceRefs: string[];
+  status: StudyNoteStatus;
+  reviewerNotes?: string | null;
+}
+
+export interface UpdateStudyNoteInput {
+  status?: StudyNoteStatus;
+  reviewerNotes?: string;
+}
+
+export interface ImportStudyNotesInput {
+  notes: CreateStudyNoteInput[];
+}
+
+export interface ImportStudyNotesResult {
+  imported: number;
+  ids: string[];
+}
+
+export interface StudyNoteRatingResult {
+  id: string;
+  rating: number;
+  averageRating: number;
+  ratingCount: number;
+}
+
 export interface SessionSummary {
   id: string;
   book: string;
@@ -163,6 +261,15 @@ export type ListAhaMomentsParams = {
 limit?: number;
 };
 
+export type ListStudyNotesParams = {
+book?: string;
+/**
+ * @minimum 1
+ */
+chapter?: number;
+q?: string;
+};
+
 type AwaitedInput<T> = PromiseLike<T> | T;
 
       type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
@@ -175,18 +282,6 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 /**
  * @summary Health check
  */
-export type healthCheckResponse200 = {
-  data: HealthStatus
-  status: 200
-}
-
-export type healthCheckResponseSuccess = (healthCheckResponse200) & {
-  headers: Headers;
-};
-;
-
-export type healthCheckResponse = (healthCheckResponseSuccess)
-
 export const getHealthCheckUrl = () => {
 
 
@@ -195,9 +290,9 @@ export const getHealthCheckUrl = () => {
   return `/healthz`
 }
 
-export const healthCheck = async ( options?: RequestInit): Promise<healthCheckResponse> => {
+export const healthCheck = async ( options?: RequestInit): Promise<HealthStatus> => {
 
-  return customFetcher<healthCheckResponse>(getHealthCheckUrl(),
+  return customFetcher<HealthStatus>(getHealthCheckUrl(),
   {
     ...options,
     method: 'GET'
@@ -265,18 +360,6 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
  * Returns the curated list of biblical proper nouns that the client uses to correct speech-recognition output.
  * @summary Bible names lexicon
  */
-export type getLexiconResponse200 = {
-  data: Lexicon
-  status: 200
-}
-
-export type getLexiconResponseSuccess = (getLexiconResponse200) & {
-  headers: Headers;
-};
-;
-
-export type getLexiconResponse = (getLexiconResponseSuccess)
-
 export const getGetLexiconUrl = () => {
 
 
@@ -285,9 +368,9 @@ export const getGetLexiconUrl = () => {
   return `/lexicon`
 }
 
-export const getLexicon = async ( options?: RequestInit): Promise<getLexiconResponse> => {
+export const getLexicon = async ( options?: RequestInit): Promise<Lexicon> => {
 
-  return customFetcher<getLexiconResponse>(getGetLexiconUrl(),
+  return customFetcher<Lexicon>(getGetLexiconUrl(),
   {
     ...options,
     method: 'GET'
@@ -354,25 +437,6 @@ export function useGetLexicon<TData = Awaited<ReturnType<typeof getLexicon>>, TE
 /**
  * @summary Get a Bible chapter
  */
-export type getPassageResponse200 = {
-  data: Passage
-  status: 200
-}
-
-export type getPassageResponse404 = {
-  data: ErrorResponse
-  status: 404
-}
-
-export type getPassageResponseSuccess = (getPassageResponse200) & {
-  headers: Headers;
-};
-export type getPassageResponseError = (getPassageResponse404) & {
-  headers: Headers;
-};
-
-export type getPassageResponse = (getPassageResponseSuccess | getPassageResponseError)
-
 export const getGetPassageUrl = (book: string,
     chapter: number,) => {
 
@@ -383,9 +447,9 @@ export const getGetPassageUrl = (book: string,
 }
 
 export const getPassage = async (book: string,
-    chapter: number, options?: RequestInit): Promise<getPassageResponse> => {
+    chapter: number, options?: RequestInit): Promise<Passage> => {
 
-  return customFetcher<getPassageResponse>(getGetPassageUrl(book,chapter),
+  return customFetcher<Passage>(getGetPassageUrl(book,chapter),
   {
     ...options,
     method: 'GET'
@@ -455,18 +519,6 @@ export function useGetPassage<TData = Awaited<ReturnType<typeof getPassage>>, TE
 /**
  * @summary List all sessions
  */
-export type listSessionsResponse200 = {
-  data: SessionSummary[]
-  status: 200
-}
-
-export type listSessionsResponseSuccess = (listSessionsResponse200) & {
-  headers: Headers;
-};
-;
-
-export type listSessionsResponse = (listSessionsResponseSuccess)
-
 export const getListSessionsUrl = (params?: ListSessionsParams,) => {
   const normalizedParams = new URLSearchParams();
 
@@ -482,9 +534,9 @@ export const getListSessionsUrl = (params?: ListSessionsParams,) => {
   return stringifiedParams.length > 0 ? `/sessions?${stringifiedParams}` : `/sessions`
 }
 
-export const listSessions = async (params?: ListSessionsParams, options?: RequestInit): Promise<listSessionsResponse> => {
+export const listSessions = async (params?: ListSessionsParams, options?: RequestInit): Promise<SessionSummary[]> => {
 
-  return customFetcher<listSessionsResponse>(getListSessionsUrl(params),
+  return customFetcher<SessionSummary[]>(getListSessionsUrl(params),
   {
     ...options,
     method: 'GET'
@@ -551,18 +603,6 @@ export function useListSessions<TData = Awaited<ReturnType<typeof listSessions>>
 /**
  * @summary Start a new session
  */
-export type createSessionResponse201 = {
-  data: Session
-  status: 201
-}
-
-export type createSessionResponseSuccess = (createSessionResponse201) & {
-  headers: Headers;
-};
-;
-
-export type createSessionResponse = (createSessionResponseSuccess)
-
 export const getCreateSessionUrl = () => {
 
 
@@ -571,9 +611,9 @@ export const getCreateSessionUrl = () => {
   return `/sessions`
 }
 
-export const createSession = async (createSessionInput: CreateSessionInput, options?: RequestInit): Promise<createSessionResponse> => {
+export const createSession = async (createSessionInput: CreateSessionInput, options?: RequestInit): Promise<Session> => {
 
-  return customFetcher<createSessionResponse>(getCreateSessionUrl(),
+  return customFetcher<Session>(getCreateSessionUrl(),
   {
     ...options,
     method: 'POST',
@@ -634,18 +674,6 @@ export const useCreateSession = <TError = unknown,
 /**
  * @summary List the 5 most recent sessions
  */
-export type listRecentSessionsResponse200 = {
-  data: SessionSummary[]
-  status: 200
-}
-
-export type listRecentSessionsResponseSuccess = (listRecentSessionsResponse200) & {
-  headers: Headers;
-};
-;
-
-export type listRecentSessionsResponse = (listRecentSessionsResponseSuccess)
-
 export const getListRecentSessionsUrl = () => {
 
 
@@ -654,9 +682,9 @@ export const getListRecentSessionsUrl = () => {
   return `/sessions/recent`
 }
 
-export const listRecentSessions = async ( options?: RequestInit): Promise<listRecentSessionsResponse> => {
+export const listRecentSessions = async ( options?: RequestInit): Promise<SessionSummary[]> => {
 
-  return customFetcher<listRecentSessionsResponse>(getListRecentSessionsUrl(),
+  return customFetcher<SessionSummary[]>(getListRecentSessionsUrl(),
   {
     ...options,
     method: 'GET'
@@ -723,25 +751,6 @@ export function useListRecentSessions<TData = Awaited<ReturnType<typeof listRece
 /**
  * @summary Get a session with all data
  */
-export type getSessionResponse200 = {
-  data: Session
-  status: 200
-}
-
-export type getSessionResponse404 = {
-  data: ErrorResponse
-  status: 404
-}
-
-export type getSessionResponseSuccess = (getSessionResponse200) & {
-  headers: Headers;
-};
-export type getSessionResponseError = (getSessionResponse404) & {
-  headers: Headers;
-};
-
-export type getSessionResponse = (getSessionResponseSuccess | getSessionResponseError)
-
 export const getGetSessionUrl = (id: string,) => {
 
 
@@ -750,9 +759,9 @@ export const getGetSessionUrl = (id: string,) => {
   return `/sessions/${id}`
 }
 
-export const getSession = async (id: string, options?: RequestInit): Promise<getSessionResponse> => {
+export const getSession = async (id: string, options?: RequestInit): Promise<Session> => {
 
-  return customFetcher<getSessionResponse>(getGetSessionUrl(id),
+  return customFetcher<Session>(getGetSessionUrl(id),
   {
     ...options,
     method: 'GET'
@@ -819,18 +828,6 @@ export function useGetSession<TData = Awaited<ReturnType<typeof getSession>>, TE
 /**
  * @summary Update a session (append transcripts, finalize, etc)
  */
-export type updateSessionResponse200 = {
-  data: Session
-  status: 200
-}
-
-export type updateSessionResponseSuccess = (updateSessionResponse200) & {
-  headers: Headers;
-};
-;
-
-export type updateSessionResponse = (updateSessionResponseSuccess)
-
 export const getUpdateSessionUrl = (id: string,) => {
 
 
@@ -840,9 +837,9 @@ export const getUpdateSessionUrl = (id: string,) => {
 }
 
 export const updateSession = async (id: string,
-    updateSessionInput: UpdateSessionInput, options?: RequestInit): Promise<updateSessionResponse> => {
+    updateSessionInput: UpdateSessionInput, options?: RequestInit): Promise<Session> => {
 
-  return customFetcher<updateSessionResponse>(getUpdateSessionUrl(id),
+  return customFetcher<Session>(getUpdateSessionUrl(id),
   {
     ...options,
     method: 'PATCH',
@@ -903,18 +900,6 @@ export const useUpdateSession = <TError = unknown,
 /**
  * @summary Delete a session
  */
-export type deleteSessionResponse204 = {
-  data: void
-  status: 204
-}
-
-export type deleteSessionResponseSuccess = (deleteSessionResponse204) & {
-  headers: Headers;
-};
-;
-
-export type deleteSessionResponse = (deleteSessionResponseSuccess)
-
 export const getDeleteSessionUrl = (id: string,) => {
 
 
@@ -923,9 +908,9 @@ export const getDeleteSessionUrl = (id: string,) => {
   return `/sessions/${id}`
 }
 
-export const deleteSession = async (id: string, options?: RequestInit): Promise<deleteSessionResponse> => {
+export const deleteSession = async (id: string, options?: RequestInit): Promise<void> => {
 
-  return customFetcher<deleteSessionResponse>(getDeleteSessionUrl(id),
+  return customFetcher<void>(getDeleteSessionUrl(id),
   {
     ...options,
     method: 'DELETE'
@@ -985,18 +970,6 @@ export const useDeleteSession = <TError = unknown,
 /**
  * @summary High-level stats for the dashboard
  */
-export type getDashboardSummaryResponse200 = {
-  data: DashboardSummary
-  status: 200
-}
-
-export type getDashboardSummaryResponseSuccess = (getDashboardSummaryResponse200) & {
-  headers: Headers;
-};
-;
-
-export type getDashboardSummaryResponse = (getDashboardSummaryResponseSuccess)
-
 export const getGetDashboardSummaryUrl = () => {
 
 
@@ -1005,9 +978,9 @@ export const getGetDashboardSummaryUrl = () => {
   return `/dashboard/summary`
 }
 
-export const getDashboardSummary = async ( options?: RequestInit): Promise<getDashboardSummaryResponse> => {
+export const getDashboardSummary = async ( options?: RequestInit): Promise<DashboardSummary> => {
 
-  return customFetcher<getDashboardSummaryResponse>(getGetDashboardSummaryUrl(),
+  return customFetcher<DashboardSummary>(getGetDashboardSummaryUrl(),
   {
     ...options,
     method: 'GET'
@@ -1074,18 +1047,6 @@ export function useGetDashboardSummary<TData = Awaited<ReturnType<typeof getDash
 /**
  * @summary Aha moments across all sessions
  */
-export type listAhaMomentsResponse200 = {
-  data: AhaMomentWithSession[]
-  status: 200
-}
-
-export type listAhaMomentsResponseSuccess = (listAhaMomentsResponse200) & {
-  headers: Headers;
-};
-;
-
-export type listAhaMomentsResponse = (listAhaMomentsResponseSuccess)
-
 export const getListAhaMomentsUrl = (params?: ListAhaMomentsParams,) => {
   const normalizedParams = new URLSearchParams();
 
@@ -1101,9 +1062,9 @@ export const getListAhaMomentsUrl = (params?: ListAhaMomentsParams,) => {
   return stringifiedParams.length > 0 ? `/dashboard/aha-moments?${stringifiedParams}` : `/dashboard/aha-moments`
 }
 
-export const listAhaMoments = async (params?: ListAhaMomentsParams, options?: RequestInit): Promise<listAhaMomentsResponse> => {
+export const listAhaMoments = async (params?: ListAhaMomentsParams, options?: RequestInit): Promise<AhaMomentWithSession[]> => {
 
-  return customFetcher<listAhaMomentsResponse>(getListAhaMomentsUrl(params),
+  return customFetcher<AhaMomentWithSession[]>(getListAhaMomentsUrl(params),
   {
     ...options,
     method: 'GET'
@@ -1170,18 +1131,6 @@ export function useListAhaMoments<TData = Awaited<ReturnType<typeof listAhaMomen
 /**
  * @summary Top passages by average vocal excitement
  */
-export type listExcitedPassagesResponse200 = {
-  data: ExcitedPassage[]
-  status: 200
-}
-
-export type listExcitedPassagesResponseSuccess = (listExcitedPassagesResponse200) & {
-  headers: Headers;
-};
-;
-
-export type listExcitedPassagesResponse = (listExcitedPassagesResponseSuccess)
-
 export const getListExcitedPassagesUrl = () => {
 
 
@@ -1190,9 +1139,9 @@ export const getListExcitedPassagesUrl = () => {
   return `/dashboard/excited-passages`
 }
 
-export const listExcitedPassages = async ( options?: RequestInit): Promise<listExcitedPassagesResponse> => {
+export const listExcitedPassages = async ( options?: RequestInit): Promise<ExcitedPassage[]> => {
 
-  return customFetcher<listExcitedPassagesResponse>(getListExcitedPassagesUrl(),
+  return customFetcher<ExcitedPassage[]>(getListExcitedPassagesUrl(),
   {
     ...options,
     method: 'GET'
@@ -1249,3 +1198,308 @@ export function useListExcitedPassages<TData = Awaited<ReturnType<typeof listExc
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+
+
+
+
+
+
+/**
+ * @summary List original-language study notes
+ */
+export const getListStudyNotesUrl = (params?: ListStudyNotesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/study-notes?${stringifiedParams}` : `/study-notes`
+}
+
+export const listStudyNotes = async (params?: ListStudyNotesParams, options?: RequestInit): Promise<StudyNote[]> => {
+
+  return customFetcher<StudyNote[]>(getListStudyNotesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListStudyNotesQueryKey = (params?: ListStudyNotesParams,) => {
+    return [
+    `/study-notes`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListStudyNotesQueryOptions = <TData = Awaited<ReturnType<typeof listStudyNotes>>, TError = unknown>(params?: ListStudyNotesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listStudyNotes>>, TError, TData>, request?: SecondParameter<typeof customFetcher>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListStudyNotesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listStudyNotes>>> = ({ signal }) => listStudyNotes(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listStudyNotes>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListStudyNotesQueryResult = NonNullable<Awaited<ReturnType<typeof listStudyNotes>>>
+export type ListStudyNotesQueryError = unknown
+
+
+/**
+ * @summary List original-language study notes
+ */
+
+export function useListStudyNotes<TData = Awaited<ReturnType<typeof listStudyNotes>>, TError = unknown>(
+ params?: ListStudyNotesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listStudyNotes>>, TError, TData>, request?: SecondParameter<typeof customFetcher>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListStudyNotesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+/**
+ * @summary Rate a study note
+ */
+export const getRateStudyNoteUrl = (id: string,) => {
+
+
+
+
+  return `/study-notes/${id}/rating`
+}
+
+export const rateStudyNote = async (id: string,
+    rateStudyNoteInput: RateStudyNoteInput, options?: RequestInit): Promise<StudyNoteRatingResult> => {
+
+  return customFetcher<StudyNoteRatingResult>(getRateStudyNoteUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      rateStudyNoteInput,)
+  }
+);}
+
+
+
+
+export const getRateStudyNoteMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rateStudyNote>>, TError,{id: string;data: RateStudyNoteInput}, TContext>, request?: SecondParameter<typeof customFetcher>}
+): UseMutationOptions<Awaited<ReturnType<typeof rateStudyNote>>, TError,{id: string;data: RateStudyNoteInput}, TContext> => {
+
+const mutationKey = ['rateStudyNote'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rateStudyNote>>, {id: string;data: RateStudyNoteInput}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  rateStudyNote(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RateStudyNoteMutationResult = NonNullable<Awaited<ReturnType<typeof rateStudyNote>>>
+    export type RateStudyNoteMutationBody = RateStudyNoteInput
+    export type RateStudyNoteMutationError = unknown
+
+    /**
+ * @summary Rate a study note
+ */
+export const useRateStudyNote = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rateStudyNote>>, TError,{id: string;data: RateStudyNoteInput}, TContext>, request?: SecondParameter<typeof customFetcher>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof rateStudyNote>>,
+        TError,
+        {id: string;data: RateStudyNoteInput},
+        TContext
+      > => {
+      return useMutation(getRateStudyNoteMutationOptions(options));
+    }
+
+/**
+ * @summary Update review status or reviewer notes for a study note
+ */
+export const getUpdateStudyNoteUrl = (id: string,) => {
+
+
+
+
+  return `/study-notes/${id}`
+}
+
+export const updateStudyNote = async (id: string,
+    updateStudyNoteInput: UpdateStudyNoteInput, options?: RequestInit): Promise<StudyNote> => {
+
+  return customFetcher<StudyNote>(getUpdateStudyNoteUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateStudyNoteInput,)
+  }
+);}
+
+
+
+
+export const getUpdateStudyNoteMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStudyNote>>, TError,{id: string;data: UpdateStudyNoteInput}, TContext>, request?: SecondParameter<typeof customFetcher>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateStudyNote>>, TError,{id: string;data: UpdateStudyNoteInput}, TContext> => {
+
+const mutationKey = ['updateStudyNote'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateStudyNote>>, {id: string;data: UpdateStudyNoteInput}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateStudyNote(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateStudyNoteMutationResult = NonNullable<Awaited<ReturnType<typeof updateStudyNote>>>
+    export type UpdateStudyNoteMutationBody = UpdateStudyNoteInput
+    export type UpdateStudyNoteMutationError = unknown
+
+    /**
+ * @summary Update review status or reviewer notes for a study note
+ */
+export const useUpdateStudyNote = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStudyNote>>, TError,{id: string;data: UpdateStudyNoteInput}, TContext>, request?: SecondParameter<typeof customFetcher>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateStudyNote>>,
+        TError,
+        {id: string;data: UpdateStudyNoteInput},
+        TContext
+      > => {
+      return useMutation(getUpdateStudyNoteMutationOptions(options));
+    }
+
+/**
+ * @summary Bulk import candidate study notes
+ */
+export const getImportStudyNotesUrl = () => {
+
+
+
+
+  return `/study-notes/import`
+}
+
+export const importStudyNotes = async (importStudyNotesInput: ImportStudyNotesInput, options?: RequestInit): Promise<ImportStudyNotesResult> => {
+
+  return customFetcher<ImportStudyNotesResult>(getImportStudyNotesUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      importStudyNotesInput,)
+  }
+);}
+
+
+
+
+export const getImportStudyNotesMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importStudyNotes>>, TError,{data: ImportStudyNotesInput}, TContext>, request?: SecondParameter<typeof customFetcher>}
+): UseMutationOptions<Awaited<ReturnType<typeof importStudyNotes>>, TError,{data: ImportStudyNotesInput}, TContext> => {
+
+const mutationKey = ['importStudyNotes'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof importStudyNotes>>, {data: ImportStudyNotesInput}> = (props) => {
+          const {data} = props ?? {};
+
+          return  importStudyNotes(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ImportStudyNotesMutationResult = NonNullable<Awaited<ReturnType<typeof importStudyNotes>>>
+    export type ImportStudyNotesMutationBody = ImportStudyNotesInput
+    export type ImportStudyNotesMutationError = unknown
+
+    /**
+ * @summary Bulk import candidate study notes
+ */
+export const useImportStudyNotes = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importStudyNotes>>, TError,{data: ImportStudyNotesInput}, TContext>, request?: SecondParameter<typeof customFetcher>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof importStudyNotes>>,
+        TError,
+        {data: ImportStudyNotesInput},
+        TContext
+      > => {
+      return useMutation(getImportStudyNotesMutationOptions(options));
+    }

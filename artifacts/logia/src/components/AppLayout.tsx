@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { ReactNode } from "react";
-import { Home, BookOpenText, Library, Sparkles, Plus } from "lucide-react";
+import { Home, BookOpenText, Library, Sparkles, Plus, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -67,6 +67,12 @@ export function AppLayout({ children }: AppLayoutProps) {
             label="Insights"
             active={location === "/insights"}
           />
+          <NavItem
+            to="/study-notes"
+            icon={Languages}
+            label="Studies"
+            active={location === "/study-notes"}
+          />
         </nav>
 
         <div className="px-4 mt-6">
@@ -106,6 +112,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               { to: "/", label: "Today" },
               { to: "/sessions", label: "Sessions" },
               { to: "/insights", label: "Insights" },
+              { to: "/study-notes", label: "Studies" },
             ].map((tab) => (
               <Link
                 key={tab.to}

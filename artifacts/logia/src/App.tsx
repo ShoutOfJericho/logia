@@ -13,6 +13,7 @@ import LiveSession from "@/pages/LiveSession";
 import SessionReview from "@/pages/SessionReview";
 import SessionsLibrary from "@/pages/SessionsLibrary";
 import Insights from "@/pages/Insights";
+import StudyNotesAdmin from "@/pages/StudyNotesAdmin";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,6 +46,7 @@ function Router() {
       <Route path="/session/:id" component={SessionReview} />
       <Route path="/sessions" component={SessionsLibrary} />
       <Route path="/insights" component={Insights} />
+      <Route path="/study-notes" component={StudyNotesAdmin} />
       <Route component={NotFound} />
     </Switch>
   );

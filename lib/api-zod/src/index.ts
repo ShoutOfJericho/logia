@@ -301,3 +301,140 @@ export const ListExcitedPassagesResponseItem = zod.object({
   "peakExcitement": zod.number()
 })
 export const ListExcitedPassagesResponse = zod.array(ListExcitedPassagesResponseItem)
+
+
+/**
+ * @summary List original-language study notes
+ */
+
+
+
+export const ListStudyNotesQueryParams = zod.object({
+  "book": zod.string().optional(),
+  "chapter": zod.number().min(1).optional(),
+  "q": zod.string().optional()
+})
+
+export const ListStudyNotesResponseItem = zod.object({
+  "id": zod.string(),
+  "topic": zod.string(),
+  "language": zod.enum(['hebrew', 'aramaic', 'greek']),
+  "title": zod.string(),
+  "claim": zod.string(),
+  "summary": zod.string(),
+  "readerValue": zod.string(),
+  "sourceName": zod.string(),
+  "sourceUrl": zod.string(),
+  "triggerPassages": zod.array(zod.string()),
+  "triggerBooks": zod.array(zod.string()),
+  "triggerKeywords": zod.array(zod.string()),
+  "passageRefs": zod.array(zod.string()),
+  "keywords": zod.array(zod.string()),
+  "evidenceRefs": zod.array(zod.string()),
+  "status": zod.enum(['approved', 'needs-review']),
+  "reviewerNotes": zod.string().nullish(),
+  "averageRating": zod.number(),
+  "ratingCount": zod.number()
+})
+export const ListStudyNotesResponse = zod.array(ListStudyNotesResponseItem)
+
+
+/**
+ * @summary Rate a study note
+ */
+export const RateStudyNoteParams = zod.object({
+  "id": zod.string()
+})
+
+
+export const rateStudyNoteBodyRatingMax = 5;
+
+
+
+export const RateStudyNoteBody = zod.object({
+  "clientId": zod.string().min(1),
+  "rating": zod.number().min(1).max(rateStudyNoteBodyRatingMax)
+})
+
+export const RateStudyNoteResponse = zod.object({
+  "id": zod.string(),
+  "rating": zod.number(),
+  "averageRating": zod.number(),
+  "ratingCount": zod.number()
+})
+
+
+/**
+ * @summary Update review status or reviewer notes for a study note
+ */
+export const UpdateStudyNoteParams = zod.object({
+  "id": zod.string()
+})
+
+export const UpdateStudyNoteBody = zod.object({
+  "status": zod.enum(['approved', 'needs-review']).optional(),
+  "reviewerNotes": zod.string().optional()
+})
+
+export const UpdateStudyNoteResponse = zod.object({
+  "id": zod.string(),
+  "topic": zod.string(),
+  "language": zod.enum(['hebrew', 'aramaic', 'greek']),
+  "title": zod.string(),
+  "claim": zod.string(),
+  "summary": zod.string(),
+  "readerValue": zod.string(),
+  "sourceName": zod.string(),
+  "sourceUrl": zod.string(),
+  "triggerPassages": zod.array(zod.string()),
+  "triggerBooks": zod.array(zod.string()),
+  "triggerKeywords": zod.array(zod.string()),
+  "passageRefs": zod.array(zod.string()),
+  "keywords": zod.array(zod.string()),
+  "evidenceRefs": zod.array(zod.string()),
+  "status": zod.enum(['approved', 'needs-review']),
+  "reviewerNotes": zod.string().nullish(),
+  "averageRating": zod.number(),
+  "ratingCount": zod.number()
+})
+
+
+/**
+ * @summary Bulk import candidate study notes
+ */
+
+
+
+
+
+
+
+
+
+
+export const ImportStudyNotesBody = zod.object({
+  "notes": zod.array(zod.object({
+  "id": zod.string().min(1),
+  "topic": zod.string().min(1),
+  "language": zod.enum(['hebrew', 'aramaic', 'greek']),
+  "title": zod.string().min(1),
+  "claim": zod.string().min(1),
+  "summary": zod.string().min(1),
+  "readerValue": zod.string().min(1),
+  "sourceName": zod.string().min(1),
+  "sourceUrl": zod.string().min(1),
+  "triggerPassages": zod.array(zod.string()),
+  "triggerBooks": zod.array(zod.string()),
+  "triggerKeywords": zod.array(zod.string()),
+  "passageRefs": zod.array(zod.string()),
+  "keywords": zod.array(zod.string()),
+  "evidenceRefs": zod.array(zod.string()),
+  "status": zod.enum(['approved', 'needs-review']),
+  "reviewerNotes": zod.string().nullish()
+}))
+})
+
+export const ImportStudyNotesResponse = zod.object({
+  "imported": zod.number(),
+  "ids": zod.array(zod.string())
+})

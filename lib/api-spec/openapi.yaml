@@ -222,6 +222,94 @@ paths:
                 type: array
                 items: { $ref: "#/components/schemas/ExcitedPassage" }
 
+  /study-notes:
+    get:
+      operationId: listStudyNotes
+      tags: [study-notes]
+      summary: List original-language study notes
+      parameters:
+        - in: query
+          name: book
+          required: false
+          schema: { type: string }
+        - in: query
+          name: chapter
+          required: false
+          schema: { type: integer, minimum: 1 }
+        - in: query
+          name: q
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: Matching study notes
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/StudyNote" }
+
+  /study-notes/{id}/rating:
+    post:
+      operationId: rateStudyNote
+      tags: [study-notes]
+      summary: Rate a study note
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RateStudyNoteInput" }
+      responses:
+        "200":
+          description: Rating saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudyNoteRatingResult" }
+
+  /study-notes/{id}:
+    patch:
+      operationId: updateStudyNote
+      tags: [study-notes]
+      summary: Update review status or reviewer notes for a study note
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateStudyNoteInput" }
+      responses:
+        "200":
+          description: Updated study note
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudyNote" }
+
+  /study-notes/import:
+    post:
+      operationId: importStudyNotes
+      tags: [study-notes]
+      summary: Bulk import candidate study notes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ImportStudyNotesInput" }
+      responses:
+        "200":
+          description: Import result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImportStudyNotesResult" }
+
 components:
   schemas:
     HealthStatus:
@@ -331,6 +419,162 @@ components:
         sessionCount: { type: integer }
         peakExcitement: { type: number }
       required: [book, chapter, averageExcitement, sessionCount, peakExcitement]
+
+    StudyNoteLanguage:
+      type: string
+      enum: [hebrew, aramaic, greek]
+
+    StudyNoteStatus:
+      type: string
+      enum: [approved, needs-review]
+
+    StudyNote:
+      type: object
+      properties:
+        id: { type: string }
+        topic: { type: string }
+        language: { $ref: "#/components/schemas/StudyNoteLanguage" }
+        title: { type: string }
+        claim: { type: string }
+        summary: { type: string }
+        readerValue: { type: string }
+        sourceName: { type: string }
+        sourceUrl: { type: string }
+        triggerPassages:
+          type: array
+          items: { type: string }
+        triggerBooks:
+          type: array
+          items: { type: string }
+        triggerKeywords:
+          type: array
+          items: { type: string }
+        passageRefs:
+          type: array
+          items: { type: string }
+        keywords:
+          type: array
+          items: { type: string }
+        evidenceRefs:
+          type: array
+          items: { type: string }
+        status: { $ref: "#/components/schemas/StudyNoteStatus" }
+        reviewerNotes: { type: string, nullable: true }
+        averageRating: { type: number }
+        ratingCount: { type: integer }
+      required:
+        - id
+        - topic
+        - language
+        - title
+        - claim
+        - summary
+        - readerValue
+        - sourceName
+        - sourceUrl
+        - triggerPassages
+        - triggerBooks
+        - triggerKeywords
+        - passageRefs
+        - keywords
+        - evidenceRefs
+        - status
+        - averageRating
+        - ratingCount
+
+    RateStudyNoteInput:
+      type: object
+      properties:
+        clientId:
+          type: string
+          minLength: 1
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+      required: [clientId, rating]
+
+    CreateStudyNoteInput:
+      type: object
+      properties:
+        id: { type: string, minLength: 1 }
+        topic: { type: string, minLength: 1 }
+        language: { $ref: "#/components/schemas/StudyNoteLanguage" }
+        title: { type: string, minLength: 1 }
+        claim: { type: string, minLength: 1 }
+        summary: { type: string, minLength: 1 }
+        readerValue: { type: string, minLength: 1 }
+        sourceName: { type: string, minLength: 1 }
+        sourceUrl: { type: string, minLength: 1 }
+        triggerPassages:
+          type: array
+          items: { type: string }
+        triggerBooks:
+          type: array
+          items: { type: string }
+        triggerKeywords:
+          type: array
+          items: { type: string }
+        passageRefs:
+          type: array
+          items: { type: string }
+        keywords:
+          type: array
+          items: { type: string }
+        evidenceRefs:
+          type: array
+          items: { type: string }
+        status: { $ref: "#/components/schemas/StudyNoteStatus" }
+        reviewerNotes: { type: string, nullable: true }
+      required:
+        - id
+        - topic
+        - language
+        - title
+        - claim
+        - summary
+        - readerValue
+        - sourceName
+        - sourceUrl
+        - triggerPassages
+        - triggerBooks
+        - triggerKeywords
+        - passageRefs
+        - keywords
+        - evidenceRefs
+        - status
+
+    UpdateStudyNoteInput:
+      type: object
+      properties:
+        status: { $ref: "#/components/schemas/StudyNoteStatus" }
+        reviewerNotes: { type: string }
+
+    ImportStudyNotesInput:
+      type: object
+      properties:
+        notes:
+          type: array
+          items: { $ref: "#/components/schemas/CreateStudyNoteInput" }
+      required: [notes]
+
+    ImportStudyNotesResult:
+      type: object
+      properties:
+        imported: { type: integer }
+        ids:
+          type: array
+          items: { type: string }
+      required: [imported, ids]
+
+    StudyNoteRatingResult:
+      type: object
+      properties:
+        id: { type: string }
+        rating: { type: integer }
+        averageRating: { type: number }
+        ratingCount: { type: integer }
+      required: [id, rating, averageRating, ratingCount]
 
     SessionSummary:
       type: object

@@ -1,8 +1,7 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useRoute } from "wouter";
 import { findGreekLexicalCards } from "@/lib/greekLexicalCards";
 import { findGreekStudyNotes } from "@/lib/greekStudyNotes";
-import { findTheologyNotes } from "@/lib/theologyNotes";
 import { findWordStudies } from "@/lib/wordStudies";
 import { generateSermonFlow } from "@/lib/sermonFlow";
 import {
@@ -17,14 +16,19 @@ import {
   Quote,
   Pencil,
   Check,
+  ExternalLink,
+  Star,
 } from "lucide-react";
 import {
   useGetSession,
   useGetPassage,
   useUpdateSession,
   useDeleteSession,
+  useListStudyNotes,
+  useRateStudyNote,
   getGetSessionQueryKey,
   getGetPassageQueryKey,
+  getListStudyNotesQueryKey,
   type TranscriptSegment,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
@@ -110,6 +114,60 @@ const importancePhrases = [
   "the lesson here",
   "the takeaway is",
 ];
+
+const STUDY_RATINGS_STORAGE_KEY = "logia.studyNoteRatings";
+const STUDY_CLIENT_ID_STORAGE_KEY = "logia.studyClientId";
+
+type StudyRatings = Record<string, number>;
+
+function StudyRatingControl({
+  noteId,
+  value,
+  onRate,
+}: {
+  noteId: string;
+  value?: number;
+  onRate: (noteId: string, rating: number) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="text-xs uppercase tracking-wider text-muted-foreground">
+        Study quality
+      </span>
+
+      <div className="flex items-center gap-1" role="radiogroup" aria-label="Rate study quality">
+        {[1, 2, 3, 4, 5].map((rating) => {
+          const selected = (value ?? 0) >= rating;
+
+          return (
+            <button
+              key={rating}
+              type="button"
+              role="radio"
+              aria-checked={value === rating}
+              aria-label={`Rate ${rating} out of 5`}
+              onClick={() => onRate(noteId, rating)}
+              className={cn(
+                "h-8 w-8 rounded-md border border-border inline-flex items-center justify-center transition-colors",
+                selected
+                  ? "bg-primary/10 text-primary border-primary/30"
+                  : "bg-background text-muted-foreground hover:text-primary",
+              )}
+            >
+              <Star className={cn("h-4 w-4", selected && "fill-current")} />
+            </button>
+          );
+        })}
+      </div>
+
+      {value && (
+        <span className="text-xs text-muted-foreground">
+          {value}/5 saved
+        </span>
+      )}
+    </div>
+  );
+}
 
 function detectImportance(text: string) {
   const lower = text.toLowerCase();
@@ -248,6 +306,60 @@ export default function SessionReview() {
 
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
+  const [studyRatings, setStudyRatings] = useState<StudyRatings>({});
+  const [studyClientId, setStudyClientId] = useState("");
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(STUDY_RATINGS_STORAGE_KEY);
+      if (!raw) return;
+
+      const parsed = JSON.parse(raw) as StudyRatings;
+      setStudyRatings(parsed);
+    } catch {
+      setStudyRatings({});
+    }
+  }, []);
+
+  useEffect(() => {
+    const existing = window.localStorage.getItem(STUDY_CLIENT_ID_STORAGE_KEY);
+
+    if (existing) {
+      setStudyClientId(existing);
+      return;
+    }
+
+    const next =
+      window.crypto?.randomUUID?.() ??
+      `client-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    window.localStorage.setItem(STUDY_CLIENT_ID_STORAGE_KEY, next);
+    setStudyClientId(next);
+  }, []);
+
+  function rateStudy(noteId: string, rating: number) {
+    setStudyRatings((current) => {
+      const next = { ...current, [noteId]: rating };
+      window.localStorage.setItem(
+        STUDY_RATINGS_STORAGE_KEY,
+        JSON.stringify(next),
+      );
+      return next;
+    });
+
+    if (!studyClientId) return;
+
+    rateStudyMutation.mutate(
+      { id: noteId, data: { clientId: studyClientId, rating } },
+      {
+        onError: () =>
+          toast({
+            title: "Couldn't save rating",
+            description: "Your rating is still saved in this browser.",
+            variant: "destructive",
+          }),
+      },
+    );
+  }
 
   const segments = session.data?.segments ?? [];
 
@@ -257,13 +369,20 @@ export default function SessionReview() {
     [segments],
   );
 
-  const theologyNotes = useMemo(() => {
-    return findTheologyNotes({
-      text: segments.map((s) => s.text).join(" "),
-      currentBook: session.data?.book,
-      currentChapter: session.data?.chapter,
-    });
-  }, [segments, session.data?.book, session.data?.chapter]);
+  const studyNoteParams = {
+    book: session.data?.book,
+    chapter: session.data?.chapter,
+    q: segments.map((s) => s.text).join(" ").slice(0, 500),
+  };
+
+  const studyNotes = useListStudyNotes(studyNoteParams, {
+    query: {
+      queryKey: getListStudyNotesQueryKey(studyNoteParams),
+      enabled: !!session.data,
+    },
+  });
+
+  const rateStudyMutation = useRateStudyNote();
 
   const wordStudies = useMemo(() => {
     return findWordStudies(
@@ -908,14 +1027,20 @@ const highEnergyQuotes = useMemo(() => {
         </section>
       )}
 
-      {theologyNotes.length > 0 && (
+      {(studyNotes.data?.length ?? 0) > 0 && (
         <section className="mb-10">
           <h2 className="font-serif text-2xl mb-4">
             Verified Study Notes
           </h2>
 
+          <p className="text-sm text-muted-foreground mb-4 max-w-3xl">
+            Rate each connection by how helpful and well-supported it is. Scores
+            are saved to the backend so weaker or speculative studies can be
+            reviewed, improved, or removed over time.
+          </p>
+
           <div className="grid gap-4">
-            {theologyNotes.map((note) => (
+            {studyNotes.data?.map((note) => (
               <Card key={note.id} className="paper">
                 <CardContent className="p-5">
                   <div className="flex items-center gap-2 mb-2">
@@ -936,6 +1061,21 @@ const highEnergyQuotes = useMemo(() => {
                     {note.claim}
                   </p>
 
+                  {note.summary && (
+                    <p className="leading-relaxed mb-4 text-sm text-muted-foreground">
+                      {note.summary}
+                    </p>
+                  )}
+
+                  {note.readerValue && (
+                    <div className="mb-4 rounded-md border border-primary/20 bg-primary/5 px-4 py-3 text-sm">
+                      <div className="text-xs uppercase tracking-wider text-primary mb-1">
+                        Why this matters
+                      </div>
+                      <p className="leading-relaxed">{note.readerValue}</p>
+                    </div>
+                  )}
+
                   <div className="text-sm text-muted-foreground mb-3">
                     Passages: {note.passageRefs.join(", ")}
                   </div>
@@ -955,18 +1095,36 @@ const highEnergyQuotes = useMemo(() => {
                     ))}
                   </div>
 
-                  <div className="border-t pt-3 text-sm text-muted-foreground">
-                    Source: {note.sourceName}
+                  <div className="border-t pt-3 text-sm text-muted-foreground flex flex-wrap items-center justify-between gap-3">
+                    <span>Source: {note.sourceName}</span>
+
+                    <a
+                      href={note.sourceUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-primary underline"
+                    >
+                      Read more
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
                   </div>
 
-                  <a
-                    href={note.sourceUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-sm text-primary underline"
-                  >
-                    Open source article
-                  </a>
+                  <div className="mt-4">
+                    <StudyRatingControl
+                      noteId={note.id}
+                      value={studyRatings[note.id]}
+                      onRate={rateStudy}
+                    />
+                  </div>
+
+                  <div className="mt-3 text-xs text-muted-foreground">
+                    Community rating:{" "}
+                    {note.ratingCount > 0
+                      ? `${note.averageRating.toFixed(1)}/5 from ${
+                          note.ratingCount
+                        } rating${note.ratingCount === 1 ? "" : "s"}`
+                      : "not rated yet"}
+                  </div>
 
                   {note.reviewerNotes && (
                     <div className="mt-4 border-t pt-3 text-sm italic text-muted-foreground">
@@ -977,6 +1135,22 @@ const highEnergyQuotes = useMemo(() => {
               </Card>
             ))}
           </div>
+        </section>
+      )}
+
+      {studyNotes.isError && (
+        <section className="mb-10">
+          <Card className="paper border-l-4 border-l-destructive">
+            <CardContent className="p-5">
+              <h2 className="font-serif text-2xl mb-2">
+                Study notes unavailable
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                The backend is running, but the study-note database tables may
+                still need to be pushed.
+              </p>
+            </CardContent>
+          </Card>
         </section>
       )}
 

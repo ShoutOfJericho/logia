@@ -71,7 +71,13 @@ router.get("/dashboard/summary", async (_req, res) => {
 });
 
 router.get("/dashboard/aha-moments", async (req, res) => {
-  const parsed = ListAhaMomentsQueryParams.safeParse(req.query);
+  const rawLimit = req.query["limit"];
+  const parsed = ListAhaMomentsQueryParams.safeParse({
+    limit:
+      typeof rawLimit === "string" && rawLimit.trim() !== ""
+        ? Number(rawLimit)
+        : undefined,
+  });
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid query parameters" });
     return;
